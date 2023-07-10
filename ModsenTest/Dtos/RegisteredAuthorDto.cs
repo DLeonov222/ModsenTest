@@ -1,11 +1,10 @@
-﻿namespace ModsenTest.Models
+﻿namespace ModsenTest.Dtos
 {
-    public class Author
+    public class RegisteredAuthorDto
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Password { get; set; }
-        public ICollection<Book> Books { get; set; }
     }
 }
