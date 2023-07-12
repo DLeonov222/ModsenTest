@@ -2,7 +2,7 @@
 
 namespace ModsenTest.Services.Interfaces
 {
-    public interface IBookServices
+    public interface IBookService
     {
         Task<IEnumerable<BookViewDto>> GetAllBooksAsync();
 

@@ -42,11 +42,12 @@ namespace ModsenTest.Services
                 Subject = new ClaimsIdentity(new[]
                 {
                     new Claim("sub", author.Id.ToString()),
-                    new Claim("name", author.FirstName + author.LastName)
+                    new Claim("firstName", author.FirstName),
+                    new Claim("lastName", author.LastName)
                 }),
                 SigningCredentials =
                     new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256),
-                Expires = DateTime.Now.AddDays(1)
+                Expires = DateTime.Now.AddDays(30)
             });
 
             return token;

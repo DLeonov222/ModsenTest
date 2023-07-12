@@ -2,123 +2,92 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ModsenTest.Data;
+using ModsenTest.Dtos;
 using ModsenTest.Models;
+using ModsenTest.Services.Interfaces;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace ModsenTest.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("[controller]")]
+    [SwaggerTag("This controller is used to manage the books")]
     public class BooksController : ControllerBase
     {
-        private readonly DataContext _context;
+        private readonly IBookService _bookService;
 
-        public BooksController(DataContext context)
+        public BooksController(IBookService bookService)
         {
-            _context = context;
+            _bookService = bookService;
         }
 
-        // GET: api/Books
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Returns a list of all Books.", Description = "Returns a list of all books.")]
+        [SwaggerResponse(200, Type = typeof(IEnumerable<BookViewDto>),
+            Description = "200 OK: Returns a list of all books.")]
+        [SwaggerResponse(404, Description = "404 Not Found: No books were found in the database.")]
+        public async Task<IActionResult> GetAllBooksAsync()
         {
-          if (_context.Books == null)
-          {
-              return NotFound();
-          }
-            return await _context.Books.ToListAsync();
+            var books = await _bookService.GetAllBooksAsync();
+            return Ok(books);
         }
 
-        // GET: api/Books/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Book>> GetBook(Guid id)
+        [AllowAnonymous]
+        [SwaggerOperation(Summary = "Returns an book with the specified id.",
+            Description = "Returns an book with the specified id")]
+        [SwaggerResponse(200, Type = typeof(BookViewDto), Description = "200 OK: book with the specified id was found.")]
+        [SwaggerResponse(404, Description = "404 Not Found: No book with the specified ID was found.")]
+        public async Task<IActionResult> GetBookByIdAsync(Guid id)
         {
-          if (_context.Books == null)
-          {
-              return NotFound();
-          }
-            var book = await _context.Books.FindAsync(id);
-
-            if (book == null)
-            {
-                return NotFound();
-            }
-
-            return book;
+            var bookById = await _bookService.GetBookByIdAsync(id);
+            return Ok(bookById);
         }
 
-        // PUT: api/Books/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBook(Guid id, Book book)
-        {
-            if (id != book.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(book).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!BookExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Books
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Book>> PostBook(Book book)
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [SwaggerOperation(Summary = "Creates a new book.", Description = "Creates a new book.")]
+        [SwaggerResponse(201, Type = typeof(CreatedBookDto), Description = "201 Created: book was created successfully.")]
+        [SwaggerResponse(400, Description = "400 Bad Request: The request body is not valid.")]
+        [SwaggerResponse(401, Description = "401 Unauthorized: Author is not authorized to create an book.")]
+        public async Task<IActionResult> CreateBookAsync([FromBody] CreateBookDto createBookDto)
         {
-          if (_context.Books == null)
-          {
-              return Problem("Entity set 'DataContext.Books'  is null.");
-          }
-            _context.Books.Add(book);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetBook", new { id = book.Id }, book);
+            var createdBook = await _bookService.CreateBookAsync(createBookDto);
+            return Created(new Uri($"{Request.Path}/{createdBook.Id}", UriKind.Relative), createdBook);
         }
 
-        // DELETE: api/Books/5
+        [HttpPut("{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [SwaggerOperation(Summary = "Updates an book with the specified id.",
+            Description = "Updates an book with the specified id.")]
+        [SwaggerResponse(200, Type = typeof(UpdatedBookDto), Description = "200 OK: book was updated successfully.")]
+        [SwaggerResponse(400, Description = "400 Bad Request: The request body is not valid.")]
+        [SwaggerResponse(401, Description = "401 Unauthorized: Author is not authorized to update the book.")]
+        [SwaggerResponse(403, Description = "403 Forbidden: Author is not authorized to update the book.")]
+        [SwaggerResponse(404, Description = "404 Not Found: No book with the specified ID was found.")]
+        public async Task<IActionResult> UpdateBookAsync(Guid id, [FromBody] UpdateBookDto updateBookDto)
+        {
+            return Ok(await _bookService.UpdateBookAsync(id, updateBookDto));
+        }
+
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBook(Guid id)
+        [SwaggerOperation(Summary = "Deletes an book with the specified id.",
+            Description = "Deletes an book with the specified id.")]
+        [SwaggerResponse(200, Type = typeof(DeletedBookDto), Description = "200 OK: book was deleted successfully.")]
+        [SwaggerResponse(401, Description = "401 Unauthorized: Author is not authorized to delete the book.")]
+        [SwaggerResponse(403, Description = "403 Forbidden: Author is not authorized to delete the book.")]
+        [SwaggerResponse(404, Description = "404 Not Found: No book with the specified ID was found.")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> DeleteBookAsync(Guid id)
         {
-            if (_context.Books == null)
-            {
-                return NotFound();
-            }
-            var book = await _context.Books.FindAsync(id);
-            if (book == null)
-            {
-                return NotFound();
-            }
-
-            _context.Books.Remove(book);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool BookExists(Guid id)
-        {
-            return (_context.Books?.Any(e => e.Id == id)).GetValueOrDefault();
+            return Ok(await _bookService.DeleteBookAsync(id));
         }
     }
 }

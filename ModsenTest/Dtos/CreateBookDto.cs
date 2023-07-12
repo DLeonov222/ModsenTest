@@ -6,7 +6,7 @@ namespace ModsenTest.Dtos
     {
         public string ISBN { get; set; }
         public string Title { get; set; }
-        public string Genre { get; set; }
+        public string GenreName { get; set; }
         public string Description { get; set; }
         public DateTime BookTakenTime { get; set; } = DateTime.Now;
         public DateTime BookReturnTime { get; set; } = DateTime.Now.AddDays(14);

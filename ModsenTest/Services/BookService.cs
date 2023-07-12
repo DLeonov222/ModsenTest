@@ -6,7 +6,7 @@ using ModsenTest.Services.Interfaces;
 
 namespace ModsenTest.Services
 {
-    public class BookService : IBookServices
+    public class BookService : IBookService
     {
         private readonly IBookRepository _bookRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -43,14 +43,13 @@ namespace ModsenTest.Services
 
         public async Task<CreatedBookDto> CreateBookAsync(CreateBookDto newCreateBookDto)
         {
-            var genre = await _genreRepository.GetGenreByNameAsync(newCreateBookDto.Genre) ??
+            var genre = await _genreRepository.GetGenreByNameAsync(newCreateBookDto.GenreName) ??
                           await _genreRepository.CreateGenreAsync(new Genre
                           {
-                             GenreName = newCreateBookDto.Genre
+                             GenreName = newCreateBookDto.GenreName
                           });
 
-            var authorId =
-                new Guid(_httpContextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "sub")?.Value!);
+            var authorId = new Guid(_httpContextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "sub")?.Value!);
             var author = await _authorRepository.GetAuthorByIdAsync(authorId) ??
                             throw new KeyNotFoundException("Author not found");
 
@@ -73,10 +72,10 @@ namespace ModsenTest.Services
 
             var updatedBook = _mapper.Map<Book>(updateBookDto);
 
-            var updatedGenre = await _genreRepository.GetGenreByNameAsync(updateBookDto.Genre) ??
+            var updatedGenre = await _genreRepository.GetGenreByNameAsync(updateBookDto.GenreName) ??
                                  await _genreRepository.CreateGenreAsync(new Genre
                                  {
-                                     GenreName = updateBookDto.Genre
+                                     GenreName = updateBookDto.GenreName
                                  });
 
             updatedBook.Id = id;
